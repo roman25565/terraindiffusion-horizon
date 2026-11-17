@@ -1,0 +1,33 @@
+// tdbake: Terrain Diffusion map baker for the Horizon tdmap mod.
+// Build: gradle jar  ->  build/libs/tdbake.jar (one runnable jar, DirectML ONNX Runtime for Windows inside).
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+    flatDir { dirs 'libs' }
+}
+
+dependencies {
+    implementation 'com.google.code.gson:gson:2.11.0'
+    implementation 'org.slf4j:slf4j-api:2.0.16'
+    runtimeOnly 'org.slf4j:slf4j-simple:2.0.16'
+    // ONNX Runtime with DirectML (any DirectX 12 GPU on Windows), from the Terrain Diffusion repo's libs/.
+    implementation name: 'onnxruntime-dml'
+}
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(21) }
+}
+
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+
+jar {
+    archiveFileName = 'tdbake.jar'
+    manifest { attributes 'Main-Class': 'tdbake.Bake' }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
+    from('LICENSE-terrain-diffusion-mc.txt')
+}

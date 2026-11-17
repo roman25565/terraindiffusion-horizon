@@ -1,0 +1,125 @@
+# tdmap for Horizon: the Overworld's terrain from a Terrain Diffusion map baked by tdbake
+# (heights and biomes in <server>/tdmap, see README.md). Vanilla adds the carvers, ores,
+# trees, structures and mobs on top. Outside the baked area: ocean (or vanilla, see
+# config/tdmap.toml). Nether and End stay vanilla.
+# Server side only: vanilla Java clients and Horizon clients need nothing.
+# Build it into a dedicated-server engine with `horizon-launcher native-build ... --trust-native-code`.
+[mod]
+id = "tdmap"
+version = "0.3.4"
+
+# Built and tested on the Nightly in update.bat, pinned the same way as our other server mods:
+# the structure injections name functions of this Horizon's generator.
+[compatibility]
+horizon_revision = "fdc87aecdbd116bf1e08adcd062fcbaea8c2e2ca"
+
+# A trait mod (catalog hooks chunk_generate, lod_column): builds each chunk from the map.
+[api]
+path = "api"
+
+# The rules and the map state, with no game types (tested by core-tests/). horizon-world
+# depends on it for the structure queries below; the [api] package uses it by path, so both
+# read one map.
+[[crate]]
+id = "core"
+path = "core"
+dependent = "horizon-world"
+
+# Where the ground is, for structures (getBaseHeight, getBaseColumn), the spawn search and the
+# far terrain's samples: the generator reads it from its router's final density. When the
+# map's dimension's generator is built, that density is registered (building, register) and
+# the router then hands out a density that reads the map (get, density.rs), so villages,
+# pyramids, portals and the data packs' structures stand on the map's ground.
+# horizon-mixins injects only into functions that are not generic, and at RETURN only into
+# functions without `?` or closures: these are such.
+[[module]]
+id = "density"
+file = "crates/horizon-world/src/worldgen/router.rs"
+name = "tdmap_density"
+source = "density.rs"
+
+[[injection]]
+id = "building"
+target = "horizon_world::worldgen::generator::OverworldGenerator::for_world_with_settings"
+kind = "HEAD"
+cancellable = false
+helper = "building.rs"
+bindings = [
+  { name = "dimension", ty = "&str", value = "dimension" },
+]
+
+[[injection]]
+id = "register"
+target = "horizon_world::worldgen::router::RouterSamplers::climate_sampler"
+kind = "HEAD"
+cancellable = false
+helper = "register.rs"
+bindings = [
+  { name = "router", ty = "&RouterSamplers", value = "&*self" },
+]
+
+[[injection]]
+id = "get"
+target = "horizon_world::worldgen::router::RouterSamplers::get"
+kind = "RETURN"
+helper = "get.rs"
+bindings = [
+  { name = "field", ty = "RouterField", value = "field" },
+  { name = "value", ty = "&Arc<dyn DensitySampler>", value = "$value" },
+]
+
+# Where structures may stand by biome (a village only on plains, savanna...): the generator
+# asks the biome source, which searches its parameter list by climate. In the map's
+# dimension the climate is moved to the map's biome's place in that list (climate.rs,
+# climate_volume.rs; the list is kept by biomes.rs), so the search answers the map's biome.
+# Nether/End biomes and cave biomes deeper than 12 blocks under the map's ground stay vanilla.
+# (The biome search's own functions return a borrowed name, which a cancellable hook can't.)
+[[injection]]
+id = "biomes"
+target = "horizon_world::worldgen::biome::MultiNoiseBiomeSource::new"
+kind = "HEAD"
+cancellable = false
+helper = "biomes.rs"
+bindings = [
+  { name = "entries", ty = "&Vec<(ParameterPoint, String)>", value = "&entries" },
+]
+
+[[injection]]
+id = "climate"
+target = "horizon_world::worldgen::climate::ClimateSampler::sample"
+kind = "HEAD"
+cancellable = true
+helper = "climate.rs"
+bindings = [
+  { name = "climate", ty = "&ClimateSampler", value = "&*self" },
+  { name = "context", ty = "&mut SamplerContext", value = "&mut *context" },
+  { name = "quart", ty = "[i32; 3]", value = "quart" },
+]
+
+[[injection]]
+id = "climate-volume"
+target = "horizon_world::worldgen::climate::ClimateSampler::sample_volume"
+kind = "HEAD"
+cancellable = true
+helper = "climate_volume.rs"
+bindings = [
+  { name = "climate", ty = "&ClimateSampler", value = "&*self" },
+  { name = "context", ty = "&mut SamplerContext", value = "&mut *context" },
+  { name = "quart_minimum", ty = "[i32; 3]", value = "quart_minimum" },
+  { name = "extents", ty = "[i32; 3]", value = "extents" },
+]
+
+# The Overworld's noise reaches only y -64..320 in vanilla: the generator's structure queries
+# see no ground above it, so a structure on a higher peak stood at 320, inside the mountain.
+# With the map's data pack tdmap-height (a taller level), the noise settings are made as tall
+# as the level when the data is loaded (noise_height.rs).
+[[injection]]
+id = "noise-height"
+target = "horizon_world::worldgen::overrides::WorldgenOverrides::apply"
+kind = "RETURN"
+helper = "noise_height.rs"
+bindings = [
+  { name = "overrides", ty = "&WorldgenOverrides", value = "&*self" },
+  { name = "bundle", ty = "&str", value = "bundle" },
+  { name = "value", ty = "BTreeMap<String, String>", value = "$value" },
+]

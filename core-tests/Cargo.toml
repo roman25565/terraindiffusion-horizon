@@ -1,0 +1,10 @@
+# tdmap's rules (the bundle's crate tdmap/core), built and tested without the game.
+# `cargo test` here. Same dependency versions as Horizon's Cargo.lock.
+[package]
+name = "tdmap-core-tests"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+tdmap-core = { path = "../tdmap/core" }

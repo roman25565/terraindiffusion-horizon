@@ -1,0 +1,32 @@
+# tdmap: the Overworld's terrain from a Terrain Diffusion map baked by tdbake.
+# Changes take effect after a server restart. Already generated chunks never change:
+# only new chunks read the map.
+
+# Folder with map.toml and tiles/ from `tdbake bake --out ...`, relative to the server
+# folder (where server.properties is) or absolute, e.g. 'F:\tdmap'.
+map = "tdmap"
+
+# The level that gets the map. Nether and End stay vanilla.
+dimension = "minecraft:overworld"
+
+# Outside the baked area (and in tiles not baked yet):
+#   "ocean"   - open ocean with its floor at `ocean_floor` (put the world border at the map's edge)
+#   "vanilla" - vanilla terrain (a visible seam at the edge)
+outside = "ocean"
+ocean_floor = 40
+# With outside = "ocean": over this many blocks before the map's edge the land sinks smoothly
+# to the ocean floor, so the map ends in a coast instead of a wall. 0 = a sheer edge.
+edge_blend = 256
+
+# What vanilla adds on top of the map's terrain.
+carvers = true       # caves and canyons of the biomes' carvers (and of data packs)
+decorations = true   # ores, trees, grass, lakes, snow: the biomes' features (and data packs')
+# Structures are placed where vanilla's own biomes and heights would have them, not the map's:
+# villages may float, sink or stand in water. false = no structures at all on the map.
+structures = true
+
+# Far terrain (horizon-lod-distance) shows the map's heights too.
+far_terrain = true
+
+# Tiles (256 x 256 blocks, 192 KB each) kept in memory. 256 tiles = about 50 MB.
+cache_tiles = 256

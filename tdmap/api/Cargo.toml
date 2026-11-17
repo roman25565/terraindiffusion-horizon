@@ -1,0 +1,17 @@
+[package]
+name = "mod-tdmap"
+version = "0.3.0"
+edition = "2024"
+license = "MIT"
+description = "tdmap for Horizon: Overworld terrain from a baked Terrain Diffusion map"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+# The launcher points this at the Horizon source it builds the game from. Every other
+# dependency must be a crate and version in Horizon's Cargo.lock.
+horizon-client = { git = "https://github.com/horizon-rust/horizon", rev = "fdc87aecdbd116bf1e08adcd062fcbaea8c2e2ca" }
+log = "0.4"
+# The bundle's own crate (a [[crate]] in horizon-mixin.toml): the launcher points it at its staged copy.
+tdmap-core = { path = "../core" }

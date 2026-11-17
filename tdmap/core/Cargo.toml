@@ -1,0 +1,18 @@
+# tdmap's rules, with no game types: the map, its tile cache, the config, each column's blocks,
+# and the one map state the whole game shares. A `[[crate]]` of the bundle: built once into
+# horizon-world (whose structure queries read heights and biomes from it, see the injections in
+# horizon-mixin.toml) and used by the `[api]` package by path. Tested by ../../core-tests.
+# Only crates and versions in Horizon's Cargo.lock.
+[package]
+name = "tdmap-core"
+version = "0.3.0"
+edition = "2024"
+license = "MIT"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+log = "0.4"
+serde = { version = "1", features = ["derive"] }
+toml = "1.1"
